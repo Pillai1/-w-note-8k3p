@@ -467,6 +467,7 @@
       <p class="note" id="done-note">Come back to this link anytime to see the countdown. Wear something you don't mind getting muddy 🐶</p>
       <div class="buttons">
         <button class="btn quiet" id="change" type="button">Pick a different day</button>
+        <button class="btn quiet" id="restart" type="button">Start over 🔄</button>
       </div>
     </section>
   </div>
@@ -492,6 +493,7 @@
   const yesBtn = document.getElementById("yes");
   const noBtn = document.getElementById("no");
   const askNote = document.getElementById("ask-note");
+  const askNoteDefault = askNote.textContent;
   const corner = document.getElementById("corner");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -665,6 +667,24 @@
     clearInterval(cdTimer);
     setMood("happy");
     show("pick");
+  });
+
+  // Start over: clear her saved day and go back to the question
+  document.getElementById("restart").addEventListener("click", () => {
+    notify(`🔄 ${who} pressed Start over to play again 😄`);
+    clearInterval(cdTimer);
+    try { localStorage.removeItem(PICK_KEY); } catch (e) {}
+    noCount = 0;
+    noBtn.hidden = false;
+    noBtn.textContent = noLines[0];
+    noBtn.style.fontSize = "";
+    yesBtn.style.fontSize = "";
+    askNote.textContent = askNoteDefault;
+    corner.setAttribute("hidden", "");
+    corner.classList.remove("play");
+    mascot.style.display = "";
+    setMood("happy");
+    show("ask");
   });
 
   // If she already picked a day before, open straight to the countdown
