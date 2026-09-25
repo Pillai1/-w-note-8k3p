@@ -239,6 +239,50 @@
   .ticket.big .t-num { font-size: 4.2rem; }
   .ticket.big .t-title { display: block; font-family: var(--hand); font-size: 1.2rem; opacity: .8; }
 
+  .other-toggle {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 14px 18px;
+    background: transparent;
+    border: 3px dashed var(--edge);
+    border-radius: 18px;
+    color: var(--ink);
+    font-family: var(--display);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color .15s;
+  }
+  .other-toggle:hover, .other-toggle[aria-expanded="true"] { background: var(--tile); }
+  .other-toggle:focus-visible { outline: 3px dashed var(--berry); outline-offset: 4px; }
+  .ot-emoji { font-size: 1.8rem; }
+  .ot-title { display: block; font-size: 1.2rem; font-weight: 600; }
+  .ot-sub { display: block; font-family: var(--hand); font-size: 1.1rem; color: var(--ink-soft); }
+  .other {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    background: var(--tile);
+    border: 3px solid var(--edge);
+    border-radius: 20px;
+    text-align: left;
+  }
+  .other-label { font-family: var(--hand); font-size: 1.25rem; color: var(--ink); }
+  .other-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    font: 500 1.05rem var(--display);
+    color: var(--ink);
+    background: var(--card);
+    border: 2.5px solid var(--edge);
+    border-radius: 12px;
+  }
+  .other-input:focus { outline: 3px solid var(--glaze); outline-offset: 1px; }
+  .other-input::placeholder { color: var(--ink-soft); opacity: .7; }
+  .other-err { margin: 0; font-family: var(--hand); font-size: 1.15rem; color: var(--berry); }
+  .btn.primary { justify-self: center; margin-top: 8px; background: var(--berry); color: #fff; font-size: 1.15rem; }
   .countdown { margin: 4px 0 18px; }
   .cd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .cd-unit {
@@ -448,7 +492,7 @@
 
     <section id="pick" aria-labelledby="pick-title" hidden>
       <h1 id="pick-title" tabindex="-1">Yay! Which day works for you?</h1>
-      <p class="note">I'm free on both. Pick your favourite.</p>
+      <p class="note">I'm free on both. Pick your favourite, or suggest another day.</p>
       <div class="dates">
         <button class="ticket" type="button" data-num="3" data-day="Saturday" data-key="sat">
           <span class="stub" aria-hidden="true">🏺</span>
@@ -464,6 +508,18 @@
             <span><span class="t-day">Sunday</span><span class="t-month">4 October 2026</span></span>
           </span>
         </button>
+        <button class="other-toggle" id="other-toggle" type="button" aria-expanded="false" aria-controls="other">
+          <span class="ot-emoji" aria-hidden="true">📅</span>
+          <span><span class="ot-title">Another day works better</span><span class="ot-sub">No pressure, just tell me what suits you</span></span>
+        </button>
+        <div class="other" id="other" hidden>
+          <label class="other-label" for="other-date">Pick a day</label>
+          <input type="date" id="other-date" class="other-input">
+          <label class="other-label" for="other-msg">Or leave a note (optional)</label>
+          <input type="text" id="other-msg" class="other-input" maxlength="140" autocomplete="off" placeholder="e.g. weekday evenings work for me">
+          <p class="other-err" id="other-err" role="alert" hidden></p>
+          <button class="btn primary" id="other-send" type="button">Send 🐾</button>
+        </div>
       </div>
     </section>
 
@@ -474,7 +530,7 @@
         <span class="info">
           <span class="t-num" id="final-num" aria-hidden="true">3</span>
           <span>
-            <span class="t-title">Our pottery date</span>
+            <span class="t-title" id="final-title">Our pottery date</span>
             <span class="t-day" id="final-day">Saturday</span>
             <span class="t-month" id="final-month">October 2026</span>
           </span>
@@ -636,22 +692,74 @@
     return `${h12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "AM" : "PM"}`;
   }
 
+  // Works out the details for a saved choice: "sat", "sun", "custom:YYYY-MM-DD" or "later"
+  function describePick(key) {
+    if (!key) return null;
+    if (key === "later") return { later: true };
+    let ymd;
+    if (DAYS[key]) ymd = `2026-10-${String(DAYS[key].num).padStart(2, "0")}`;
+    else if (/^custom:\d{4}-\d{2}-\d{2}$/.test(key)) ymd = key.slice(7);
+    else return null;
+    const noon = new Date(`${ymd}T12:00:00+08:00`);
+    if (isNaN(noon)) return null;
+    const opt = { timeZone: "Asia/Singapore" };
+    return {
+      ymd,
+      custom: !DAYS[key],
+      num: Number(ymd.slice(8)),
+      day: noon.toLocaleDateString("en-GB", { ...opt, weekday: "long" }),
+      monthYear: noon.toLocaleDateString("en-GB", { ...opt, month: "long", year: "numeric" })
+    };
+  }
+  function pickLabel(key) {
+    const d = describePick(key);
+    if (!d) return "";
+    return d.later ? "she left a note instead of a day" : `${d.day} ${d.num} ${d.monthYear}`;
+  }
+
+  const DONE_DEFAULTS = {
+    title: document.getElementById("done-title").textContent,
+    note: document.getElementById("done-note").textContent,
+    label: document.getElementById("cd-label").textContent
+  };
+
   function applyPick(key) {
-    const d = DAYS[key];
+    const d = describePick(key);
+    if (!d) return false;
+    const el = id => document.getElementById(id);
+    clearInterval(cdTimer);
+
+    if (d.later) {
+      el("done-title").textContent = "Got it! 🐶";
+      el("final-ticket").hidden = true;
+      el("countdown").hidden = true;
+      el("cd-today").hidden = true;
+      el("done-note").textContent = "Thanks for telling me. I'll message you so we can find a day that works 🐾";
+      return true;
+    }
+
     let hh = 0, mm = 0;
     if (/^\d{1,2}:\d{2}$/.test(DATE_TIME.trim())) {
       [hh, mm] = DATE_TIME.trim().split(":").map(Number);
     }
-    document.getElementById("final-num").textContent = d.num;
-    document.getElementById("final-day").textContent = d.day;
-    document.getElementById("final-month").textContent =
-      DATE_TIME.trim() ? `October 2026, ${formatTime(hh, mm)}` : "October 2026";
-    document.getElementById("final-ticket").classList.toggle("celadon", key === "sun");
+    el("final-ticket").hidden = false;
+    el("done-title").textContent = d.custom ? "Got it! 🐶" : DONE_DEFAULTS.title;
+    el("final-title").textContent = d.custom ? "Your suggested day" : "Our pottery date";
+    el("done-note").textContent = d.custom
+      ? "I'll check and confirm with you soon. The countdown is already running 🐾"
+      : DONE_DEFAULTS.note;
+    el("cd-label").textContent = d.custom ? "until your suggested day 🐾" : DONE_DEFAULTS.label;
+    el("final-num").textContent = d.num;
+    el("final-day").textContent = d.day;
+    el("final-month").textContent =
+      DATE_TIME.trim() && !d.custom ? `${d.monthYear}, ${formatTime(hh, mm)}` : d.monthYear;
+    el("final-ticket").classList.toggle("celadon", key === "sun");
     // Singapore time (UTC+8), whatever time zone her phone is set to
     const pad = n => String(n).padStart(2, "0");
-    const target = new Date(`2026-10-${pad(d.num)}T${pad(hh)}:${pad(mm)}:00+08:00`);
-    const dayEnd = new Date(`2026-10-${pad(d.num + 1)}T00:00:00+08:00`);
+    const target = new Date(`${d.ymd}T${pad(d.custom ? 0 : hh)}:${pad(d.custom ? 0 : mm)}:00+08:00`);
+    const dayEnd = new Date(new Date(`${d.ymd}T00:00:00+08:00`).getTime() + 86400000);
     startCountdown(target, dayEnd);
+    return true;
   }
 
   function startCountdown(target, dayEnd) {
@@ -681,6 +789,57 @@
     cdTimer = setInterval(tick, 1000);
   }
 
+  const otherToggle = document.getElementById("other-toggle");
+  const otherBox = document.getElementById("other");
+  const otherDate = document.getElementById("other-date");
+  const otherMsg = document.getElementById("other-msg");
+  const otherErr = document.getElementById("other-err");
+  const todaySG = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
+
+  otherToggle.addEventListener("click", () => {
+    const open = otherBox.hidden;
+    otherBox.hidden = !open;
+    otherToggle.setAttribute("aria-expanded", String(open));
+    if (open) {
+      otherDate.min = todaySG();
+      otherDate.focus();
+    }
+  });
+
+  document.getElementById("other-send").addEventListener("click", e => {
+    const ymd = otherDate.value;
+    const msg = otherMsg.value.trim();
+    otherErr.hidden = true;
+    if (!ymd && !msg) {
+      otherErr.textContent = "Pick a day or leave a note first 🐶";
+      otherErr.hidden = false;
+      return;
+    }
+    if (ymd && ymd < todaySG()) {
+      otherErr.textContent = "That day has already passed. Pick today or later 🐾";
+      otherErr.hidden = false;
+      return;
+    }
+    const key = ymd ? `custom:${ymd}` : "later";
+    const note = msg ? `\n💬 "${msg}"` : "";
+    notify(ymd
+      ? `🗓️ ${who} suggested another day: ${pickLabel(key)}${note}`
+      : `💬 ${who} can't do 3 or 4 October and left a note:${note}`);
+    try { localStorage.setItem(PICK_KEY, key); } catch (err) {}
+    applyPick(key);
+    burst(e.currentTarget);
+    setMood(ymd ? "ecstatic" : "happy");
+    show("done");
+  });
+
+  function resetOtherForm() {
+    otherBox.hidden = true;
+    otherToggle.setAttribute("aria-expanded", "false");
+    otherDate.value = "";
+    otherMsg.value = "";
+    otherErr.hidden = true;
+  }
+
   document.querySelectorAll("#pick .ticket").forEach(t => {
     t.addEventListener("click", () => {
       notify(`📅 ${who} picked ${t.dataset.day}, ${t.dataset.num} October 2026! Pottery date is on 🏺`);
@@ -704,6 +863,7 @@
     notify(`🔄 ${who} pressed Start over to play again 😄`);
     clearInterval(cdTimer);
     try { localStorage.removeItem(PICK_KEY); } catch (e) {}
+    resetOtherForm();
     noCount = 0;
     noBtn.hidden = false;
     noBtn.textContent = noLines[0];
@@ -726,11 +886,10 @@
   function openNormally() {
     let savedPick = null;
     try { savedPick = localStorage.getItem(PICK_KEY); } catch (e) {}
-    if (savedPick && DAYS[savedPick]) {
-      applyPick(savedPick);
-      setMood("ecstatic");
+    if (savedPick && applyPick(savedPick)) {
+      setMood(savedPick === "later" ? "happy" : "ecstatic");
       show("done");
-      return `👀 ${who} came back to check the countdown (${DAYS[savedPick].day} ${DAYS[savedPick].num} October) 🐶`;
+      return `👀 ${who} came back to check the page (${pickLabel(savedPick)}) 🐶`;
     }
     setMood("happy");
     show("ask");
