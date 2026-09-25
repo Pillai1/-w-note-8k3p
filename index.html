@@ -17,6 +17,7 @@
     --edge: #6E2447;
     --berry: #F0508A;
     --glaze: #FF9EC4;
+    --tile: #FFE1EE;
     --ticket-ink: #6E2447;
     --display: "Fredoka", "Nunito", "Varela Round", system-ui, sans-serif;
     --hand: "Patrick Hand", "Comic Sans MS", "Chalkboard SE", cursive;
@@ -34,6 +35,7 @@
       --edge: #FF9EC4;
       --berry: #FF5C98;
       --glaze: #C8427E;
+      --tile: #5A2A45;
       color-scheme: dark;
     }
   }
@@ -45,6 +47,7 @@
     --edge: #FF9EC4;
     --berry: #FF5C98;
     --glaze: #C8427E;
+    --tile: #5A2A45;
     color-scheme: dark;
   }
   *, *::before, *::after { box-sizing: inherit; }
@@ -234,6 +237,28 @@
   .ticket.big .t-num { font-size: 4.2rem; }
   .ticket.big .t-title { display: block; font-family: var(--hand); font-size: 1.2rem; opacity: .8; }
 
+  .countdown { margin: 4px 0 18px; }
+  .cd-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .cd-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px 8px;
+    background: var(--tile);
+    border: 3px solid var(--edge);
+    border-radius: 20px;
+    box-shadow: 0 4px 0 var(--edge);
+  }
+  .cd-num {
+    font-size: clamp(1.6rem, 9cqi, 2.5rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--berry);
+    font-variant-numeric: tabular-nums;
+  }
+  .cd-word { font-family: var(--hand); font-size: 1.1rem; color: var(--ink-soft); margin-top: 2px; }
+  .cd-label { font-family: var(--hand); font-size: 1.3rem; color: var(--ink); margin: 12px 0 0; }
+  .cd-today { font-size: 1.5rem; font-weight: 600; color: var(--berry); margin: 6px 0 18px; }
   .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }
   .confetti span { position: absolute; font-size: 1.6rem; will-change: transform, opacity; }
 
@@ -425,11 +450,21 @@
           <span>
             <span class="t-title">Our pottery date</span>
             <span class="t-day" id="final-day">Saturday</span>
-            <span class="t-month">October 2026</span>
+            <span class="t-month" id="final-month">October 2026</span>
           </span>
         </span>
       </div>
-      <p class="note">Screenshot this and send it to me. Wear something you don't mind getting muddy 🐶</p>
+      <div class="countdown" id="countdown">
+        <div class="cd-grid" role="timer" aria-label="Time left until our date">
+          <div class="cd-unit"><span class="cd-num" id="cd-d">0</span><span class="cd-word">days</span></div>
+          <div class="cd-unit"><span class="cd-num" id="cd-h">00</span><span class="cd-word">hours</span></div>
+          <div class="cd-unit"><span class="cd-num" id="cd-m">00</span><span class="cd-word">mins</span></div>
+          <div class="cd-unit"><span class="cd-num" id="cd-s">00</span><span class="cd-word">secs</span></div>
+        </div>
+        <p class="cd-label" id="cd-label">until our pottery date 🐾</p>
+      </div>
+      <p class="cd-today" id="cd-today" hidden></p>
+      <p class="note" id="done-note">Come back to this link anytime to see the countdown. Wear something you don't mind getting muddy 🐶</p>
       <div class="buttons">
         <button class="btn quiet" id="change" type="button">Pick a different day</button>
       </div>
@@ -452,7 +487,6 @@
     try { fetch(url, { mode: "no-cors", keepalive: true }).catch(() => {}); } catch (e) {}
   }
   const who = HER_NAME.trim() || "She";
-  notify(`👀 ${who} opened the invite`);
 
   const mascot = document.getElementById("mascot");
   const yesBtn = document.getElementById("yes");
@@ -558,12 +592,68 @@
     show("pick");
   });
 
+  // ⏰ Optional: set the class start time (24-hour, e.g. "14:00").
+  // Leave empty to count down to the start of the date day.
+  const DATE_TIME = "";
+
+  const PICK_KEY = "thirdDate.pick";
+  const DAYS = {
+    sat: { num: 3, day: "Saturday" },
+    sun: { num: 4, day: "Sunday" }
+  };
+  let cdTimer = null;
+
+  function formatTime(hh, mm) {
+    const h12 = ((hh + 11) % 12) + 1;
+    return `${h12}:${String(mm).padStart(2, "0")} ${hh < 12 ? "AM" : "PM"}`;
+  }
+
+  function applyPick(key) {
+    const d = DAYS[key];
+    let hh = 0, mm = 0;
+    if (/^\d{1,2}:\d{2}$/.test(DATE_TIME.trim())) {
+      [hh, mm] = DATE_TIME.trim().split(":").map(Number);
+    }
+    document.getElementById("final-num").textContent = d.num;
+    document.getElementById("final-day").textContent = d.day;
+    document.getElementById("final-month").textContent =
+      DATE_TIME.trim() ? `October 2026, ${formatTime(hh, mm)}` : "October 2026";
+    document.getElementById("final-ticket").classList.toggle("celadon", key === "sun");
+    startCountdown(new Date(2026, 9, d.num, hh, mm, 0), new Date(2026, 9, d.num + 1));
+  }
+
+  function startCountdown(target, dayEnd) {
+    clearInterval(cdTimer);
+    const box = document.getElementById("countdown");
+    const today = document.getElementById("cd-today");
+    const set = (id, v) => { document.getElementById(id).textContent = v; };
+    const tick = () => {
+      const now = new Date();
+      const diff = target - now;
+      if (diff <= 0) {
+        clearInterval(cdTimer);
+        box.hidden = true;
+        today.hidden = false;
+        today.textContent = now < dayEnd ? "It's today! See you soon 🐶💗" : "Hope you had the best time 🐾💗";
+        return;
+      }
+      box.hidden = false;
+      today.hidden = true;
+      const secs = Math.floor(diff / 1000);
+      set("cd-d", Math.floor(secs / 86400));
+      set("cd-h", String(Math.floor(secs % 86400 / 3600)).padStart(2, "0"));
+      set("cd-m", String(Math.floor(secs % 3600 / 60)).padStart(2, "0"));
+      set("cd-s", String(secs % 60).padStart(2, "0"));
+    };
+    tick();
+    cdTimer = setInterval(tick, 1000);
+  }
+
   document.querySelectorAll("#pick .ticket").forEach(t => {
     t.addEventListener("click", () => {
       notify(`📅 ${who} picked ${t.dataset.day}, ${t.dataset.num} October 2026! Pottery date is on 🏺`);
-      document.getElementById("final-num").textContent = t.dataset.num;
-      document.getElementById("final-day").textContent = t.dataset.day;
-      document.getElementById("final-ticket").classList.toggle("celadon", t.classList.contains("celadon"));
+      try { localStorage.setItem(PICK_KEY, t.dataset.key); } catch (e) {}
+      applyPick(t.dataset.key);
       burst(t);
       setMood("ecstatic");
       show("done");
@@ -572,9 +662,22 @@
 
   document.getElementById("change").addEventListener("click", () => {
     notify(`🔁 ${who} is changing the day…`);
+    clearInterval(cdTimer);
     setMood("happy");
     show("pick");
   });
+
+  // If she already picked a day before, open straight to the countdown
+  let savedPick = null;
+  try { savedPick = localStorage.getItem(PICK_KEY); } catch (e) {}
+  if (savedPick && DAYS[savedPick]) {
+    applyPick(savedPick);
+    setMood("ecstatic");
+    show("done");
+    notify(`👀 ${who} came back to check the countdown (${DAYS[savedPick].day} ${DAYS[savedPick].num} October) 🐶`);
+  } else {
+    notify(`👀 ${who} opened the invite`);
+  }
 </script>
 </body>
 </html>
