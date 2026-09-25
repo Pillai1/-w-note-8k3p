@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>A little question for Weiqi 🏺</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFDDEB;
+    --card: #FFF6FA;
+    --ink: #6E2447;
+    --ink-soft: #A2527A;
+    --edge: #6E2447;
+    --berry: #F0508A;
+    --glaze: #FF9EC4;
+    --ticket-ink: #6E2447;
+    --display: "Fredoka", "Nunito", "Varela Round", system-ui, sans-serif;
+    --hand: "Patrick Hand", "Comic Sans MS", "Chalkboard SE", cursive;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #2E1424;
+      --card: #401F33;
+      --ink: #FFE4EF;
+      --ink-soft: #F2B3CE;
+      --edge: #FF9EC4;
+      --berry: #FF5C98;
+      --glaze: #C8427E;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #2E1424;
+    --card: #401F33;
+    --ink: #FFE4EF;
+    --ink-soft: #F2B3CE;
+    --edge: #FF9EC4;
+    --berry: #FF5C98;
+    --glaze: #C8427E;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    height: 100%;
+    margin: 0;
+    background-color: var(--bg);
+    /* tiny hearts and paw prints */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath d='M24 26c0-5-7-7-8-2-1 5 8 10 8 10s9-5 8-10c-1-5-8-3-8 2z' fill='%23F0508A' opacity='.16'/%3E%3Cg fill='%23D6336C' opacity='.12'%3E%3Cellipse cx='84' cy='88' rx='7' ry='6'/%3E%3Ccircle cx='75' cy='78' r='3'/%3E%3Ccircle cx='81' cy='73' r='3'/%3E%3Ccircle cx='88' cy='73' r='3'/%3E%3Ccircle cx='94' cy='78' r='3'/%3E%3C/g%3E%3C/svg%3E");
+    color: var(--ink);
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .stage {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 28px 16px 40px;
+  }
+  /* the card is a speckled stoneware tile with pink glaze dripping off the top */
+  .card {
+    width: min(560px, 100%);
+    background-color: var(--card);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='70'%3E%3Cg fill='%23E0679A' opacity='.3'%3E%3Ccircle cx='8' cy='12' r='1'/%3E%3Ccircle cx='41' cy='6' r='.7'/%3E%3Ccircle cx='60' cy='30' r='1.1'/%3E%3Ccircle cx='23' cy='44' r='.8'/%3E%3Ccircle cx='50' cy='58' r='.9'/%3E%3Ccircle cx='12' cy='64' r='.6'/%3E%3Ccircle cx='33' cy='24' r='.5'/%3E%3C/g%3E%3C/svg%3E");
+    border: 3px solid var(--edge);
+    border-radius: 40px;
+    box-shadow: 0 10px 0 var(--edge);
+    padding: 54px 22px 36px;
+    text-align: center;
+    position: relative;
+    overflow: clip;
+    container-type: inline-size;
+  }
+  .drip {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 48px;
+    fill: var(--glaze);
+    pointer-events: none;
+  }
+  .greet {
+    font-family: var(--hand);
+    font-size: 1.35rem;
+    color: var(--ink-soft);
+    margin: 0 0 4px;
+  }
+  .mascot {
+    display: block;
+    width: 180px;
+    height: auto;
+    margin: 0 auto;
+    overflow: visible;
+  }
+  .corner {
+    display: block;
+    width: 250px;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 320 / 260;
+    margin: 4px auto 18px;
+    border: 3px solid var(--edge);
+    border-radius: 24px;
+    box-shadow: 0 6px 0 var(--edge);
+    background: #A0609B;
+  }
+  .corner .pup { transform: translate(165px, 288px) scale(1.4); }
+  .corner .pfront { opacity: 0; }
+  .corner.play .pup { animation: pup-walk 1.8s cubic-bezier(.35,.6,.45,1) forwards; }
+  .corner.play .pbob { animation: pup-bob .36s ease-in-out 5; }
+  .corner.play .pback { animation: pup-turn-away 3.2s linear forwards; }
+  .corner.play .pfront { animation: pup-turn-sit 3.2s ease-out forwards; }
+  @keyframes pup-walk {
+    from { transform: translate(165px, 288px) scale(1.4); }
+    to   { transform: translate(170px, 212px) scale(1); }
+  }
+  .corner .tear { opacity: 0; }
+  .corner.play .tear { animation: tear-fall .9s ease-in 3.2s infinite; }
+  .corner.play .tear.t2 { animation-delay: 3.6s; }
+  @keyframes tear-fall {
+    0%   { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(26px); opacity: 0; }
+  }
+  @keyframes pup-bob { 50% { transform: translateY(-6px) rotate(2deg); } }
+  @keyframes pup-turn-away {
+    0%, 60% { transform: scaleX(1); opacity: 1; }
+    65%     { transform: scaleX(.05); opacity: 1; }
+    65.5%, 100% { transform: scaleX(.05); opacity: 0; }
+  }
+  @keyframes pup-turn-sit {
+    0%, 65%  { transform: scaleX(.05); opacity: 0; }
+    65.5%    { transform: scaleX(.05); opacity: 1; }
+    71%      { transform: scaleX(1); opacity: 1; }
+    82%      { transform: translateY(-7px); opacity: 1; }
+    92%      { transform: translateY(2px) scale(1.06, .9); opacity: 1; }
+    100%     { transform: translateY(0) scale(1.02, .95); opacity: 1; }
+  }
+  .mascot.bump { animation: bump .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.08) rotate(-3deg); }
+    100% { transform: scale(1); }
+  }
+  h1 {
+    font-weight: 600;
+    font-size: clamp(1.8rem, 6.5vw, 2.6rem);
+    line-height: 1.1;
+    margin: 10px 0 8px;
+    text-wrap: balance;
+  }
+  h1:focus { outline: none; }
+  .note {
+    font-family: var(--hand);
+    font-size: 1.3rem;
+    line-height: 1.35;
+    color: var(--ink-soft);
+    margin: 0 auto;
+    max-width: 34ch;
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 26px;
+  }
+  .btn {
+    font-family: var(--display);
+    font-weight: 600;
+    line-height: 1.1;
+    border: 3px solid var(--edge);
+    border-radius: 999px;
+    padding: .5em 1.3em;
+    box-shadow: 0 .22em 0 var(--edge);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: font-size .4s cubic-bezier(.34,1.56,.64,1), transform .1s, box-shadow .1s;
+  }
+  .btn:active { transform: translateY(.15em); box-shadow: 0 .07em 0 var(--edge); }
+  .btn:focus-visible { outline: 3px dashed var(--berry); outline-offset: 5px; }
+  #yes { background: var(--berry); color: #fff; font-size: 1.4rem; }
+  #no { background: var(--card); color: var(--ink); font-size: 1.1rem; }
+  .btn.quiet { background: transparent; color: var(--ink); font-size: 1rem; }
+
+  .dates { display: grid; gap: 18px; margin-top: 24px; }
+  .ticket {
+    --stub: 72px;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    border-radius: 18px;
+    background: #FFD6E5;
+    color: var(--ticket-ink);
+    font-family: var(--display);
+    text-align: left;
+    -webkit-mask:
+      radial-gradient(circle 11px at var(--stub) 0, #0000 98%, #000 100%) top / 100% 51% no-repeat,
+      radial-gradient(circle 11px at var(--stub) 100%, #0000 98%, #000 100%) bottom / 100% 51% no-repeat;
+            mask:
+      radial-gradient(circle 11px at var(--stub) 0, #0000 98%, #000 100%) top / 100% 51% no-repeat,
+      radial-gradient(circle 11px at var(--stub) 100%, #0000 98%, #000 100%) bottom / 100% 51% no-repeat;
+  }
+  .ticket.celadon { background: #F9C6E4; }
+  button.ticket { cursor: pointer; transition: transform .18s cubic-bezier(.34,1.56,.64,1), background-color .18s; }
+  button.ticket:hover, button.ticket:focus-visible { transform: rotate(-1.5deg) scale(1.03); background: #FFBDD5; outline: none; }
+  button.ticket.celadon:hover, button.ticket.celadon:focus-visible { background: #F2A8D6; transform: rotate(1.5deg) scale(1.03); }
+  .stub {
+    width: var(--stub);
+    flex: none;
+    display: grid;
+    place-items: center;
+    font-size: 1.9rem;
+    border-right: 3px dashed rgba(110,36,71,.3);
+  }
+  .info { flex: 1; display: flex; align-items: center; gap: 16px; padding: 16px 20px; }
+  .t-num { font-size: 3.4rem; font-weight: 700; line-height: 1; color: #D6336C; }
+  .t-day { display: block; font-size: 1.35rem; font-weight: 600; }
+  .t-month { display: block; font-family: var(--hand); font-size: 1.15rem; opacity: .8; }
+
+  .ticket.big { --stub: 84px; margin: 22px 0 18px; transform: rotate(-2deg); }
+  .ticket.big .stub { font-size: 2.3rem; }
+  .ticket.big .t-num { font-size: 4.2rem; }
+  .ticket.big .t-title { display: block; font-family: var(--hand); font-size: 1.2rem; opacity: .8; }
+
+  .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }
+  .confetti span { position: absolute; font-size: 1.6rem; will-change: transform, opacity; }
+
+  [hidden] { display: none !important; }
+
+  @media (max-width: 400px) {
+    .card { padding: 50px 16px 30px; border-radius: 32px; }
+    .mascot { width: 160px; }
+    .info { gap: 12px; padding: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn, button.ticket { transition: none; }
+    .mascot.bump { animation: none; }
+    .corner.play .pup, .corner.play .pbob, .corner.play .pback, .corner.play .pfront { animation-duration: .01s; animation-iteration-count: 1; }
+    .corner.play .tear { animation: none; }
+  }
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="card">
+    <svg class="drip" viewBox="0 0 560 48" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0H560V16L520 16C512 16 512 18 512 24L512 33A7 7 0 0 1 498 33L498 24C498 18 498 16 490 16L444 16C436 16 436 18 436 24L436 20A6 6 0 0 1 424 20L424 24C424 18 424 16 416 16L376 16C368 16 368 18 368 24L368 38A8 8 0 0 1 352 38L352 24C352 18 352 16 344 16L284 16C276 16 276 18 276 24L276 24A6 6 0 0 1 264 24L264 24C264 18 264 16 256 16L205 16C197 16 197 18 197 24L197 35A7 7 0 0 1 183 35L183 24C183 18 183 16 175 16L124 16C116 16 116 18 116 24L116 18A6 6 0 0 1 104 18L104 24C104 18 104 16 96 16L60 16C52 16 52 18 52 24L52 29A7 7 0 0 1 38 29L38 24C38 18 38 16 30 16L0 16Z"/></svg>
+    <p class="greet" id="greet">Hey Weiqi 💌</p>
+
+    <svg class="mascot" id="mascot" viewBox="0 0 200 205" role="img" aria-label="A little puppy with floppy ears">
+      <!-- floating hearts (happy mood) -->
+      <g data-mood="ecstatic" fill="#F0508A" stroke="#5A3426" stroke-width="2">
+        <path d="M24 44c0-6-9-8-10-2-1 6 10 12 10 12s11-6 10-12c-1-6-10-4-10 2z"/>
+        <path d="M184 58c0-5-7-6-8-1-1 5 8 9 8 9s9-4 8-9c-1-5-8-4-8 1z"/>
+        <path d="M168 18c0-4-6-5-6-1-1 4 6 7 6 7s7-3 6-7c0-4-6-3-6 1z"/>
+      </g>
+      <!-- collar -->
+      <path d="M50 164Q100 196 150 164" fill="none" stroke="#F0508A" stroke-width="10" stroke-linecap="round"/>
+      <!-- head -->
+      <path d="M100 44C146 44 172 76 172 116C172 158 140 180 100 180C60 180 28 158 28 116C28 76 54 44 100 44Z" fill="#F5E1C8" stroke="#5A3426" stroke-width="4"/>
+      <path d="M90 47Q94 34 100 44Q106 32 110 47" fill="#F5E1C8" stroke="#5A3426" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- eye patch -->
+      <ellipse cx="128" cy="110" rx="19" ry="17" fill="#D9A77A"/>
+      <!-- floppy ears -->
+      <path d="M54 60C30 58 12 90 18 124C22 146 44 148 50 130C56 110 64 86 62 70C61 64 58 61 54 60Z" fill="#B7825A" stroke="#5A3426" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M146 60C170 58 188 90 182 124C178 146 156 148 150 130C144 110 136 86 138 70C139 64 142 61 146 60Z" fill="#B7825A" stroke="#5A3426" stroke-width="4" stroke-linejoin="round"/>
+      <!-- muzzle + cheeks + nose -->
+      <ellipse cx="100" cy="142" rx="29" ry="21" fill="#FFF6EC"/>
+      <ellipse cx="62" cy="138" rx="10" ry="6.5" fill="#FF7FA3" opacity=".55"/>
+      <ellipse cx="138" cy="138" rx="10" ry="6.5" fill="#FF7FA3" opacity=".55"/>
+      <path d="M91 126Q100 121 109 126Q107 134 100 135Q93 134 91 126Z" fill="#5A3426"/>
+      <ellipse cx="97" cy="126" rx="3" ry="1.6" fill="#fff" opacity=".7"/>
+      <path d="M100 183c0-5-8-7-9-2-1 5 9 11 9 11s10-6 9-11c-1-5-9-3-9 2z" fill="#FFD86B" stroke="#5A3426" stroke-width="2.5" stroke-linejoin="round"/>
+
+      <g fill="none" stroke="#5A3426" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <g data-mood="happy">
+          <circle cx="74" cy="110" r="7" fill="#5A3426" stroke="none"/>
+          <circle cx="126" cy="110" r="7" fill="#5A3426" stroke="none"/>
+          <circle cx="71.5" cy="107.5" r="2.4" fill="#fff" stroke="none"/>
+          <circle cx="123.5" cy="107.5" r="2.4" fill="#fff" stroke="none"/>
+          <path d="M100 135V140M88 139Q94 147 100 140Q106 147 112 139"/>
+        </g>
+        <!-- unimpressed face: flat eyes -->
+        <g data-mood="meh">
+          <path d="M64 110H84M116 110H136"/>
+          <path d="M66 110A8 5 0 0 0 82 110M118 110A8 5 0 0 0 134 110" fill="#5A3426"/>
+          <path d="M100 135V140M90 145H110"/>
+        </g>
+        <g data-mood="worried">
+          <circle cx="74" cy="110" r="7" fill="#5A3426" stroke="none"/>
+          <circle cx="126" cy="110" r="7" fill="#5A3426" stroke="none"/>
+          <circle cx="71.5" cy="107.5" r="2.4" fill="#fff" stroke="none"/>
+          <circle cx="123.5" cy="107.5" r="2.4" fill="#fff" stroke="none"/>
+          <path d="M62 97L82 91M138 97L118 91"/>
+          <path d="M100 135V141M89 147Q94.5 142 100 147Q105.5 152 111 147"/>
+        </g>
+        <g data-mood="sad">
+          <circle cx="74" cy="111" r="9" fill="#5A3426" stroke="none"/>
+          <circle cx="126" cy="111" r="9" fill="#5A3426" stroke="none"/>
+          <circle cx="71" cy="108" r="3.2" fill="#fff" stroke="none"/>
+          <circle cx="123" cy="108" r="3.2" fill="#fff" stroke="none"/>
+          <circle cx="77" cy="115" r="1.5" fill="#fff" stroke="none"/>
+          <circle cx="129" cy="115" r="1.5" fill="#fff" stroke="none"/>
+          <path d="M60 96L82 89M140 96L118 89"/>
+          <path d="M100 135V141M89 153Q100 142 111 153"/>
+          <path d="M66 124Q59 135 66 139Q73 135 66 124Z" fill="#8FD3F4" stroke-width="2"/>
+        </g>
+        <g data-mood="crying">
+          <path d="M65 103L81 110L65 117M135 103L119 110L135 117"/>
+          <path d="M60 93L82 98M140 93L118 98" stroke-width="3"/>
+          <ellipse cx="100" cy="150" rx="10" ry="8" fill="#5A3426" stroke="none"/>
+          <path d="M72 120Q64 144 70 168M128 120Q136 144 130 168" stroke="#8FD3F4" stroke-width="7"/>
+        </g>
+        <g data-mood="ecstatic">
+          <path d="M64 114Q74 99 84 114M116 114Q126 99 136 114"/>
+          <path d="M100 135V139M86 139Q100 158 114 139Z" fill="#5A3426"/>
+          <path d="M93 148Q100 144 107 148L107 158Q100 167 93 158Z" fill="#FF7FA3" stroke-width="2.5"/>
+        </g>
+      </g>
+    </svg>
+    <svg class="corner" id="corner" viewBox="0 0 320 260" role="img" aria-label="The puppy walks into the corner, turns around and sits down crying" hidden>
+      <defs>
+        <radialGradient id="lamp" cx="70%" cy="30%" r="60%">
+          <stop offset="0" stop-color="#FFB3D1" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#FFB3D1" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <polygon points="0,0 150,0 150,178 0,228" fill="#8A4F86"/>
+      <polygon points="150,0 320,0 320,200 150,178" fill="#A0609B"/>
+      <polygon points="150,0 320,0 320,200 150,178" fill="url(#lamp)"/>
+      <polygon points="0,228 150,178 320,200 320,260 0,260" fill="#7A4574"/>
+      <g stroke="#693A64" stroke-width="2" opacity=".8">
+        <path d="M150 178L60 260M150 178L150 260M150 178L250 260M150 178L330 245"/>
+      </g>
+      <path d="M150 0V178M0 228L150 178L320 200" fill="none" stroke="#4E2549" stroke-width="3.5" stroke-linejoin="round"/>
+
+      <g class="pup" id="pup">
+        <ellipse cx="0" cy="0" rx="30" ry="6" fill="#3A1535" opacity=".45"/>
+        <!-- back view, walking -->
+        <g class="pback"><g class="pbob">
+          <ellipse cx="-11" cy="-4" rx="8" ry="6" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <ellipse cx="11" cy="-4" rx="8" ry="6" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <ellipse cx="0" cy="-28" rx="24" ry="24" fill="#F5E1C8" stroke="#5A3426" stroke-width="3.5"/>
+          <path d="M0 -26Q10 -20 5 -9" fill="none" stroke="#B7825A" stroke-width="6" stroke-linecap="round"/>
+          <path d="M-18 -46Q0 -38 18 -46" fill="none" stroke="#F0508A" stroke-width="6" stroke-linecap="round"/>
+          <ellipse cx="0" cy="-70" rx="34" ry="30" fill="#F5E1C8" stroke="#5A3426" stroke-width="3.5"/>
+          <path d="M-6 -99Q-3 -106 0 -100Q3 -107 6 -99" fill="#F5E1C8" stroke="#5A3426" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M-24 -90C-40 -90-48-72-44-54C-41-44-30-46-28-56C-26-66-24-78-24-90Z" fill="#B7825A" stroke="#5A3426" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M24 -90C40 -90 48-72 44-54C41-44 30-46 28-56C26-66 24-78 24-90Z" fill="#B7825A" stroke="#5A3426" stroke-width="3.5" stroke-linejoin="round"/>
+        </g></g>
+        <!-- front view, sitting alone -->
+        <g class="pfront">
+          <ellipse cx="-21" cy="-8" rx="12" ry="9" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <ellipse cx="21" cy="-8" rx="12" ry="9" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <ellipse cx="0" cy="-24" rx="25" ry="22" fill="#F5E1C8" stroke="#5A3426" stroke-width="3.5"/>
+          <ellipse cx="-8" cy="-4" rx="7.5" ry="5.5" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <ellipse cx="8" cy="-4" rx="7.5" ry="5.5" fill="#F5E1C8" stroke="#5A3426" stroke-width="3"/>
+          <path d="M-19 -43Q0 -33 19 -43" fill="none" stroke="#F0508A" stroke-width="6" stroke-linecap="round"/>
+          <path d="M0 -35c0-3-5-4-5-1 0 3 5 6 5 6s5-3 5-6c0-3-5-2-5 1z" fill="#FFD86B" stroke="#5A3426" stroke-width="1.5"/>
+          <ellipse cx="0" cy="-68" rx="34" ry="30" fill="#F5E1C8" stroke="#5A3426" stroke-width="3.5"/>
+          <path d="M-6 -97Q-3 -104 0 -98Q3 -105 6 -97" fill="#F5E1C8" stroke="#5A3426" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="13" cy="-71" rx="10" ry="9" fill="#D9A77A"/>
+          <g transform="translate(0 2)"><path d="M-24 -90C-40 -90-48-72-44-54C-41-44-30-46-28-56C-26-66-24-78-24-90Z" fill="#B7825A" stroke="#5A3426" stroke-width="3.5" stroke-linejoin="round"/>
+            <path d="M24 -90C40 -90 48-72 44-54C41-44 30-46 28-56C26-66 24-78 24-90Z" fill="#B7825A" stroke="#5A3426" stroke-width="3.5" stroke-linejoin="round"/></g>
+          <ellipse cx="0" cy="-55" rx="15" ry="10" fill="#FFF6EC"/>
+          <ellipse cx="-21" cy="-58" rx="5.5" ry="3.2" fill="#FF7FA3" opacity=".55"/>
+          <ellipse cx="21" cy="-58" rx="5.5" ry="3.2" fill="#FF7FA3" opacity=".55"/>
+          <path d="M-5 -62Q0 -65 5 -62Q4 -58 0 -57Q-4 -58 -5 -62Z" fill="#5A3426"/>
+          <path d="M-14 -66Q-19 -52 -16 -38M14 -66Q19 -52 16 -38" fill="none" stroke="#8FD3F4" stroke-width="5" stroke-linecap="round"/>
+          <path d="M-20 -75L-9 -71L-20 -67M20 -75L9 -71L20 -67M-22 -80L-9 -85M22 -80L9 -85M0 -57V-54" fill="none" stroke="#5A3426" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <ellipse cx="0" cy="-50" rx="5.5" ry="4.5" fill="#5A3426"/>
+          <circle class="tear" cx="-16" cy="-38" r="3" fill="#8FD3F4"/>
+          <circle class="tear t2" cx="16" cy="-38" r="3" fill="#8FD3F4"/>
+        </g>
+      </g>
+    </svg>
+
+    <section id="ask" aria-labelledby="ask-title">
+      <h1 id="ask-title" tabindex="-1">Will you go on a third date with me?</h1>
+      <p class="note" id="ask-note">I'm thinking pottery: you, me, a wheel, and a very messy table.</p>
+      <div class="buttons">
+        <button class="btn" id="yes" type="button">Yes 💖</button>
+        <button class="btn" id="no" type="button">No</button>
+      </div>
+    </section>
+
+    <section id="pick" aria-labelledby="pick-title" hidden>
+      <h1 id="pick-title" tabindex="-1">Yay! Which day works for you?</h1>
+      <p class="note">I'm free on both. Pick your favourite.</p>
+      <div class="dates">
+        <button class="ticket" type="button" data-num="3" data-day="Saturday" data-key="sat">
+          <span class="stub" aria-hidden="true">🏺</span>
+          <span class="info">
+            <span class="t-num" aria-hidden="true">3</span>
+            <span><span class="t-day">Saturday</span><span class="t-month">3 October 2026</span></span>
+          </span>
+        </button>
+        <button class="ticket celadon" type="button" data-num="4" data-day="Sunday" data-key="sun">
+          <span class="stub" aria-hidden="true">🐾</span>
+          <span class="info">
+            <span class="t-num" aria-hidden="true">4</span>
+            <span><span class="t-day">Sunday</span><span class="t-month">4 October 2026</span></span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section id="done" aria-labelledby="done-title" hidden>
+      <h1 id="done-title" tabindex="-1">It's a date! 🏺</h1>
+      <div class="ticket big" id="final-ticket">
+        <span class="stub" aria-hidden="true">💌</span>
+        <span class="info">
+          <span class="t-num" id="final-num" aria-hidden="true">3</span>
+          <span>
+            <span class="t-title">Our pottery date</span>
+            <span class="t-day" id="final-day">Saturday</span>
+            <span class="t-month">October 2026</span>
+          </span>
+        </span>
+      </div>
+      <p class="note">Screenshot this and send it to me. Wear something you don't mind getting muddy 🐶</p>
+      <div class="buttons">
+        <button class="btn quiet" id="change" type="button">Pick a different day</button>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+  const HER_NAME = "Weiqi";
+
+  // Telegram: sends you a message every time she clicks something.
+  const TELEGRAM_BOT_TOKEN = "8967925658:AAEHgw3utb0e9qvZbTaIiuwqck1AAj64wxA";
+  const TELEGRAM_CHAT_ID = "186386792";
+
+  function notify(text) {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage` +
+      `?chat_id=${encodeURIComponent(TELEGRAM_CHAT_ID)}&text=${encodeURIComponent(text)}`;
+    try { fetch(url, { mode: "no-cors", keepalive: true }).catch(() => {}); } catch (e) {}
+  }
+  const who = HER_NAME.trim() || "She";
+  notify(`👀 ${who} opened the invite`);
+
+  const mascot = document.getElementById("mascot");
+  const yesBtn = document.getElementById("yes");
+  const noBtn = document.getElementById("no");
+  const askNote = document.getElementById("ask-note");
+  const corner = document.getElementById("corner");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // What the No button says after each press
+  const noLines = [
+    "No",
+    "You sure?? 🥺",
+    "Not the No again 😭"
+  ];
+  // The little note under the question, updated as she keeps pressing No
+  const noNotes = {
+    1: "…😐",
+    2: "Even the pottery wheel stopped spinning. Last chance!"
+  };
+  let noCount = 0;
+
+  function setMood(mood) {
+    mascot.querySelectorAll("[data-mood]").forEach(g => {
+      g.style.display = g.dataset.mood === mood ? "" : "none";
+    });
+    mascot.classList.remove("bump");
+    void mascot.getBoundingClientRect();
+    mascot.classList.add("bump");
+  }
+  setMood("happy");
+
+  function moodFor(count) {
+    return count === 1 ? "meh" : "sad";
+  }
+
+  noBtn.addEventListener("click", () => {
+    noCount++;
+    if (noCount >= noLines.length) {
+      notify(`🔥 ${who} pressed No ${noCount} times. The puppy went to sit in the corner 🥲`);
+      noBtn.hidden = true;
+      yesBtn.style.fontSize = "15cqi";
+      askNote.textContent = "The puppy will just be in the corner… unless you press Yes 💕";
+      mascot.style.display = "none";
+      corner.removeAttribute("hidden");
+      corner.classList.remove("play");
+      void corner.getBoundingClientRect();
+      corner.classList.add("play");
+      yesBtn.focus();
+      return;
+    }
+    notify(`💔 ${who} pressed No (${noCount}/${noLines.length})`);
+    const size = 1.4 * (1 + noCount * 1.3);
+    yesBtn.style.fontSize = `min(${size}rem, 13.5cqi)`;
+    noBtn.textContent = noLines[noCount];
+    noBtn.style.fontSize = `${Math.max(0.85, 1.1 - noCount * 0.03)}rem`;
+    if (noNotes[noCount]) askNote.textContent = noNotes[noCount];
+    setMood(moodFor(noCount));
+  });
+
+  function show(id) {
+    ["ask", "pick", "done"].forEach(s => {
+      document.getElementById(s).hidden = s !== id;
+    });
+    const h = document.querySelector(`#${id} h1`);
+    if (h) h.focus({ preventScroll: true });
+  }
+
+  function burst(fromEl) {
+    if (reduceMotion) return;
+    const layer = document.getElementById("confetti");
+    const r = fromEl.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const bits = ["💖", "🎀", "🌸", "🐶", "💗", "🐾"];
+    for (let i = 0; i < 34; i++) {
+      const s = document.createElement("span");
+      s.textContent = bits[i % bits.length];
+      s.style.left = cx + "px";
+      s.style.top = cy + "px";
+      layer.appendChild(s);
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 120 + Math.random() * 220;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist - 80;
+      const anim = s.animate([
+        { transform: "translate(-50%, -50%) scale(.4) rotate(0deg)", opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1) rotate(${(Math.random() - .5) * 120}deg)`, opacity: 1, offset: .6 },
+        { transform: `translate(calc(-50% + ${dx * 1.1}px), calc(-50% + ${dy + 160}px)) scale(.9) rotate(${(Math.random() - .5) * 200}deg)`, opacity: 0 }
+      ], { duration: 1300 + Math.random() * 600, easing: "cubic-bezier(.2,.7,.3,1)" });
+      anim.onfinish = () => s.remove();
+    }
+  }
+
+  yesBtn.addEventListener("click", () => {
+    notify(noCount === 0
+      ? `💖 ${who} said YES straight away!`
+      : `💖 ${who} said YES! (after ${noCount} No${noCount === 1 ? "" : "s"})`);
+    corner.setAttribute("hidden", "");
+    corner.classList.remove("play");
+    mascot.style.display = "";
+    burst(yesBtn);
+    setMood("ecstatic");
+    show("pick");
+  });
+
+  document.querySelectorAll("#pick .ticket").forEach(t => {
+    t.addEventListener("click", () => {
+      notify(`📅 ${who} picked ${t.dataset.day}, ${t.dataset.num} October 2026! Pottery date is on 🏺`);
+      document.getElementById("final-num").textContent = t.dataset.num;
+      document.getElementById("final-day").textContent = t.dataset.day;
+      document.getElementById("final-ticket").classList.toggle("celadon", t.classList.contains("celadon"));
+      burst(t);
+      setMood("ecstatic");
+      show("done");
+    });
+  });
+
+  document.getElementById("change").addEventListener("click", () => {
+    notify(`🔁 ${who} is changing the day…`);
+    setMood("happy");
+    show("pick");
+  });
+</script>
+</body>
+</html>
