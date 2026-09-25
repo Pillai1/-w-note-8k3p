@@ -284,7 +284,7 @@
 <main class="stage">
   <div class="card">
     <svg class="drip" viewBox="0 0 560 48" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0H560V16L520 16C512 16 512 18 512 24L512 33A7 7 0 0 1 498 33L498 24C498 18 498 16 490 16L444 16C436 16 436 18 436 24L436 20A6 6 0 0 1 424 20L424 24C424 18 424 16 416 16L376 16C368 16 368 18 368 24L368 38A8 8 0 0 1 352 38L352 24C352 18 352 16 344 16L284 16C276 16 276 18 276 24L276 24A6 6 0 0 1 264 24L264 24C264 18 264 16 256 16L205 16C197 16 197 18 197 24L197 35A7 7 0 0 1 183 35L183 24C183 18 183 16 175 16L124 16C116 16 116 18 116 24L116 18A6 6 0 0 1 104 18L104 24C104 18 104 16 96 16L60 16C52 16 52 18 52 24L52 29A7 7 0 0 1 38 29L38 24C38 18 38 16 30 16L0 16Z"/></svg>
-    <p class="greet" id="greet">Hey Weiqi 💌</p>
+    <p class="greet" id="greet">Hey Weiqi 👋</p>
 
     <svg class="mascot" id="mascot" viewBox="0 0 200 205" role="img" aria-label="A little puppy with floppy ears">
       <!-- floating hearts (happy mood) -->
@@ -470,7 +470,7 @@
     <section id="done" aria-labelledby="done-title" hidden>
       <h1 id="done-title" tabindex="-1">It's a date! 🏺</h1>
       <div class="ticket big" id="final-ticket">
-        <span class="stub" aria-hidden="true">💌</span>
+        <span class="stub" aria-hidden="true">🏺</span>
         <span class="info">
           <span class="t-num" id="final-num" aria-hidden="true">3</span>
           <span>
@@ -647,7 +647,11 @@
     document.getElementById("final-month").textContent =
       DATE_TIME.trim() ? `October 2026, ${formatTime(hh, mm)}` : "October 2026";
     document.getElementById("final-ticket").classList.toggle("celadon", key === "sun");
-    startCountdown(new Date(2026, 9, d.num, hh, mm, 0), new Date(2026, 9, d.num + 1));
+    // Singapore time (UTC+8), whatever time zone her phone is set to
+    const pad = n => String(n).padStart(2, "0");
+    const target = new Date(`2026-10-${pad(d.num)}T${pad(hh)}:${pad(mm)}:00+08:00`);
+    const dayEnd = new Date(`2026-10-${pad(d.num + 1)}T00:00:00+08:00`);
+    startCountdown(target, dayEnd);
   }
 
   function startCountdown(target, dayEnd) {
@@ -714,9 +718,8 @@
   });
 
   // If she already picked a day before, open straight to the countdown
-  // 🔒 The invite stays locked until this moment (her phone's local time).
-  // Month is 0-based: 8 = September. This is Wednesday 30 September 2026, 00:00.
-  const UNLOCK_AT = new Date(2026, 8, 30, 0, 0, 0);
+  // 🔒 The invite stays locked until Wednesday 30 September 2026, 00:00 Singapore time (UTC+8).
+  const UNLOCK_AT = new Date("2026-09-30T00:00:00+08:00");
   // For testing: add ?peek to the end of the link to skip the lock.
   const peek = new URLSearchParams(location.search).has("peek");
 
