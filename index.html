@@ -147,6 +147,8 @@
     92%      { transform: translateY(2px) scale(1.06, .9); opacity: 1; }
     100%     { transform: translateY(0) scale(1.02, .95); opacity: 1; }
   }
+  .zzz { animation: zzz 2.4s ease-in-out infinite; }
+  @keyframes zzz { 50% { transform: translate(3px, -4px); opacity: .6; } }
   .mascot.bump { animation: bump .45s cubic-bezier(.34,1.56,.64,1); }
   @keyframes bump {
     0% { transform: scale(1); }
@@ -272,6 +274,7 @@
   @media (prefers-reduced-motion: reduce) {
     .btn, button.ticket { transition: none; }
     .mascot.bump { animation: none; }
+    .zzz { animation: none; }
     .corner.play .pup, .corner.play .pbob, .corner.play .pback, .corner.play .pfront { animation-duration: .01s; animation-iteration-count: 1; }
     .corner.play .tear { animation: none; }
   }
@@ -309,6 +312,15 @@
       <path d="M100 183c0-5-8-7-9-2-1 5 9 11 9 11s10-6 9-11c-1-5-9-3-9 2z" fill="#FFD86B" stroke="#5A3426" stroke-width="2.5" stroke-linejoin="round"/>
 
       <g fill="none" stroke="#5A3426" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+        <g data-mood="sleepy">
+          <path d="M64 111Q74 119 84 111M116 111Q126 119 136 111"/>
+          <path d="M100 135V139M94 142Q100 146 106 142"/>
+          <g class="zzz" fill="#A2527A" stroke="none" font-family="Fredoka, system-ui, sans-serif" font-weight="600">
+            <text x="150" y="56" font-size="22">z</text>
+            <text x="166" y="38" font-size="17">z</text>
+            <text x="179" y="23" font-size="13">z</text>
+          </g>
+        </g>
         <g data-mood="happy">
           <circle cx="74" cy="110" r="7" fill="#5A3426" stroke="none"/>
           <circle cx="126" cy="110" r="7" fill="#5A3426" stroke="none"/>
@@ -411,7 +423,21 @@
       </g>
     </svg>
 
-    <section id="ask" aria-labelledby="ask-title">
+    <section id="locked" aria-labelledby="locked-title" hidden>
+      <h1 id="locked-title" tabindex="-1">Shh… not yet! 🤫</h1>
+      <p class="note">Something's coming for you on Wednesday. The puppy is guarding it until then.</p>
+      <div class="countdown" style="margin-top:20px">
+        <div class="cd-grid" role="timer" aria-label="Time left until it opens">
+          <div class="cd-unit"><span class="cd-num" id="lk-d">0</span><span class="cd-word">days</span></div>
+          <div class="cd-unit"><span class="cd-num" id="lk-h">00</span><span class="cd-word">hours</span></div>
+          <div class="cd-unit"><span class="cd-num" id="lk-m">00</span><span class="cd-word">mins</span></div>
+          <div class="cd-unit"><span class="cd-num" id="lk-s">00</span><span class="cd-word">secs</span></div>
+        </div>
+        <p class="cd-label">until it opens 🐾</p>
+      </div>
+    </section>
+
+    <section id="ask" aria-labelledby="ask-title" hidden>
       <h1 id="ask-title" tabindex="-1">Will you go on a third date with me?</h1>
       <p class="note" id="ask-note">I'm thinking pottery: you, me, a wheel, and a very messy table.</p>
       <div class="buttons">
@@ -549,7 +575,7 @@
   });
 
   function show(id) {
-    ["ask", "pick", "done"].forEach(s => {
+    ["locked", "ask", "pick", "done"].forEach(s => {
       document.getElementById(s).hidden = s !== id;
     });
     const h = document.querySelector(`#${id} h1`);
@@ -688,15 +714,50 @@
   });
 
   // If she already picked a day before, open straight to the countdown
-  let savedPick = null;
-  try { savedPick = localStorage.getItem(PICK_KEY); } catch (e) {}
-  if (savedPick && DAYS[savedPick]) {
-    applyPick(savedPick);
-    setMood("ecstatic");
-    show("done");
-    notify(`👀 ${who} came back to check the countdown (${DAYS[savedPick].day} ${DAYS[savedPick].num} October) 🐶`);
+  // 🔒 The invite stays locked until this moment (her phone's local time).
+  // Month is 0-based: 8 = September. This is Wednesday 30 September 2026, 00:00.
+  const UNLOCK_AT = new Date(2026, 8, 30, 0, 0, 0);
+  // For testing: add ?peek to the end of the link to skip the lock.
+  const peek = new URLSearchParams(location.search).has("peek");
+
+  function openNormally() {
+    let savedPick = null;
+    try { savedPick = localStorage.getItem(PICK_KEY); } catch (e) {}
+    if (savedPick && DAYS[savedPick]) {
+      applyPick(savedPick);
+      setMood("ecstatic");
+      show("done");
+      return `👀 ${who} came back to check the countdown (${DAYS[savedPick].day} ${DAYS[savedPick].num} October) 🐶`;
+    }
+    setMood("happy");
+    show("ask");
+    return `👀 ${who} opened the invite`;
+  }
+
+  if (!peek && new Date() < UNLOCK_AT) {
+    setMood("sleepy");
+    show("locked");
+    notify(`🔒 ${who} opened the link early. It's still locked until Wednesday 👀`);
+    const set = (id, v) => { document.getElementById(id).textContent = v; };
+    const lockTick = () => {
+      const diff = UNLOCK_AT - new Date();
+      if (diff <= 0) {
+        clearInterval(lockTimer);
+        openNormally();
+        burst(document.getElementById("ask-title"));
+        notify(`🔓 The invite just unlocked while ${who} was watching 🥹`);
+        return;
+      }
+      const secs = Math.floor(diff / 1000);
+      set("lk-d", Math.floor(secs / 86400));
+      set("lk-h", String(Math.floor(secs % 86400 / 3600)).padStart(2, "0"));
+      set("lk-m", String(Math.floor(secs % 3600 / 60)).padStart(2, "0"));
+      set("lk-s", String(secs % 60).padStart(2, "0"));
+    };
+    const lockTimer = setInterval(lockTick, 1000);
+    lockTick();
   } else {
-    notify(`👀 ${who} opened the invite`);
+    notify(openNormally());
   }
 </script>
 </body>
